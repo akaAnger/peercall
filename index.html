@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>PeerCall — просто позвонить</title>
+  <meta name="theme-color" content="#0b1220">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    :root{
+      --bg:#0b1220; --panel:#0f172a; --ink:#e5e7eb; --muted:#9ca3af; --accent:#22c55e; --accent-ink:#06210f;
+      --warn:#f59e0b; --danger:#ef4444; --ok:#34d399; --line:rgba(255,255,255,.08);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,"Noto Sans";}
+    .wrap{max-width:980px;margin:0 auto;padding:24px}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 12px 30px rgba(0,0,0,.25)}
+    h1{font-size:26px;margin:0 0 8px}
+    p.lead{margin:0 0 10px;color:var(--muted)}
+    .grid{display:grid;gap:14px;grid-template-columns:repeat(12,1fr)}
+    .col-4{grid-column:span 4} .col-6{grid-column:span 6} .col-8{grid-column:span 8} .col-12{grid-column:span 12}
+    @media (max-width:860px){.col-4,.col-6,.col-8{grid-column:span 12}}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:#0f172a;color:var(--ink);
+         padding:14px 16px;border-radius:14px;font-weight:700;cursor:pointer;min-height:48px;font-size:16px}
+    .btn:hover{border-color:rgba(255,255,255,.25)}
+    .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+    .btn.ghost{background:transparent}
+    .btn.danger{background:var(--danger);border-color:transparent}
+    .btn:disabled{opacity:.55;cursor:not-allowed}
+    .row{display:flex;flex-wrap:wrap;gap:10px}
+    .badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--line)}
+    .note{font-size:13px;color:var(--muted)}
+    .sep{height:1px;background:var(--line);margin:14px 0}
+    textarea, input[type=text]{width:100%;padding:14px;border-radius:14px;background:#0a0f1a;color:var(--ink);border:1px solid var(--line);font-family:ui-monospace,Consolas,Menlo,monospace}
+    textarea{min-height:128px;resize:vertical}
+    .pill{display:inline-flex;gap:8px;align-items:center;background:rgba(34,197,94,.12);color:#b7f7cf;border:1px solid rgba(34,197,94,.25);padding:6px 10px;border-radius:999px}
+    .k{display:inline-flex;align-items:center;gap:8px}
+    .status{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px dashed var(--line);border-radius:12px;background:rgba(255,255,255,.03)}
+    .status .dot{width:10px;height:10px;border-radius:50%;background:#64748b}
+    .status.ok .dot{background:var(--ok)} .status.warn .dot{background:var(--warn)} .status.bad .dot{background:var(--danger)}
+    .meters{display:flex;gap:10px;margin-top:10px}
+    .bar{flex:1;height:10px;background:#1f2937;border-radius:10px;overflow:hidden}
+    .bar > i{display:block;height:100%;width:0%;background:linear-gradient(90deg,#22c55e,#84cc16)}
+    details{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:rgba(255,255,255,.03)}
+    summary{cursor:pointer}
+    .float-tip{font-size:12px;color:var(--muted)}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>PeerCall — просто позвонить</h1>
+    <p class="lead">Для семьи и друзей. Без регистраций и бэкенда: обмен «кодами» вручную. Работает в мобильном браузере.</p>
+
+    <div class="status" id="appStatus">
+      <span class="dot"></span><b id="stateText">Готово к началу</b>
+      <span class="badge" id="netHint">STUN: включён</span>
+      <span class="badge" id="roleHint">Роль: не выбрана</span>
+      <span class="badge" id="callHint">Звонок: нет</span>
+    </div>
+
+    <div class="sep"></div>
+
+    <div class="grid">
+      <div class="col-4">
+        <h3>Шаг 1 — Выберите роль</h3>
+        <div class="row">
+          <button class="btn" id="btnCaller">Я звоню</button>
+          <button class="btn" id="btnCallee">Мне звонят</button>
+          <label class="note"><input type="checkbox" id="ckStun" checked> Использовать STUN (рекомендуется)</label>
+          <label class="note"><input type="checkbox" id="ckMom" > Режим «для мамы» (больше шрифты, меньше деталей)</label>
+        </div>
+        <div class="sep"></div>
+        <h3>Шаг 2 — Микрофон</h3>
+        <div class="row">
+          <button class="btn primary" id="btnMic">Разрешить микрофон</button>
+          <span class="badge" id="micBadge">Микрофон: неактивен</span>
+        </div>
+        <div class="meters">
+          <div class="bar"><i id="lvLocal"></i></div>
+          <div class="bar"><i id="lvRemote"></i></div>
+        </div>
+        <span class="float-tip">Левая полоса — вы, правая — собеседник.</span>
+      </div>
+
+      <div class="col-8">
+        <h3>Шаг 3 — Обмен кодами</h3>
+        <div class="grid">
+          <div class="col-12">
+            <label class="note">Ваш код (передайте собеседнику):</label>
+            <textarea id="myCode" readonly placeholder="Нажмите «Сформировать код»…"></textarea>
+            <div class="row">
+              <button class="btn primary" id="btnMake">Сформировать код</button>
+              <button class="btn" id="btnCopy" disabled>Копировать</button>
+              <button class="btn ghost" id="btnShare" disabled>Поделиться…</button>
+            </div>
+          </div>
+          <div class="col-12">
+            <label class="note">Код собеседника:</label>
+            <textarea id="peerCode" placeholder="Вставьте сюда код"></textarea>
+            <div class="row">
+              <button class="btn" id="btnAccept">Подтвердить код</button>
+              <button class="btn ghost" id="btnPaste">Вставить из буфера</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="row">
+          <audio id="remoteAudio" autoplay playsinline></audio>
+          <button class="btn danger" id="btnHang" disabled>Завершить звонок</button>
+          <span class="badge" id="statRtt">RTT: —</span>
+          <span class="badge" id="statBit">Битрейт: —</span>
+          <span class="badge" id="statJit">Джиттер: —</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+    <details>
+      <summary>Что важно знать</summary>
+      <ul class="note">
+        <li>Код одноразовый и действует только для текущего вызова.</li>
+        <li>Если связь не установилась, попробуйте включить Wi‑Fi или другую сеть. Для «железобетона» нужен TURN‑ретранслятор.</li>
+        <li>Для iOS лучше использовать установленную PWA (кнопка «Поделиться» → «На экран Домой»).</li>
+      </ul>
+    </details>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (id)=>document.getElementById(id);
+  const ui = {
+    appStatus: $('appStatus'), stateText: $('stateText'),
+    netHint: $('netHint'), roleHint: $('roleHint'), callHint: $('callHint'),
+    btnCaller: $('btnCaller'), btnCallee: $('btnCallee'),
+    ckStun: $('ckStun'), ckMom: $('ckMom'),
+    btnMic: $('btnMic'), micBadge: $('micBadge'),
+    lvLocal: $('lvLocal'), lvRemote: $('lvRemote'),
+    myCode: $('myCode'), peerCode: $('peerCode'),
+    btnMake: $('btnMake'), btnCopy: $('btnCopy'), btnShare: $('btnShare'),
+    btnAccept: $('btnAccept'), btnPaste: $('btnPaste'),
+    remoteAudio: $('remoteAudio'), btnHang: $('btnHang'),
+    statRtt: $('statRtt'), statBit: $('statBit'), statJit: $('statJit')
+  };
+
+  const S = {
+    role: null,
+    useStun: true,
+    mic: null,
+    pc: null,
+    gathered: [],
+    audioCtx: null,
+    localAnalyser: null,
+    remoteAnalyser: null,
+    statsTimer: null
+  };
+
+  function setStatus(level, text){
+    ui.appStatus.classList.remove('ok','warn','bad');
+    ui.appStatus.classList.add(level);
+    ui.stateText.textContent = text;
+  }
+  function setRole(r){
+    S.role = r;
+    ui.roleHint.textContent = 'Роль: ' + (r ? (r==='caller'?'я звоню':'мне звонят') : 'не выбрана');
+  }
+  ui.btnCaller.onclick = ()=>setRole('caller');
+  ui.btnCallee.onclick = ()=>setRole('callee');
+
+  ui.ckStun.onchange = ()=>{
+    S.useStun = ui.ckStun.checked;
+    ui.netHint.textContent = 'STUN: ' + (S.useStun?'включён':'выкл');
+  };
+
+  ui.ckMom.onchange = ()=>{
+    document.body.style.fontSize = ui.ckMom.checked ? '18px' : '';
+  };
+
+  async function ensureMic(){
+    if(S.mic) return;
+    try{
+      const s = await navigator.mediaDevices.getUserMedia({audio:true, video:false});
+      S.mic = s; ui.micBadge.textContent = 'Микрофон: активен'; ui.micBadge.style.color = '#b7f7cf';
+      setupLocalLevelMeter(s);
+    }catch(e){
+      setStatus('bad','Микрофон недоступен'); alert('Ошибка микрофона: ' + e.message);
+    }
+  }
+  ui.btnMic.onclick = ensureMic;
+
+  function iceServers(){
+    return S.useStun ? [
+      {urls:'stun:stun.l.google.com:19302'},
+      {urls:'stun:stun1.l.google.com:19302'},
+      {urls:'stun:stun2.l.google.com:19302'},
+      {urls:'stun:stun3.l.google.com:19302'}
+    ] : [];
+  }
+
+  function newPC(){
+    if(S.pc){ try{ S.pc.close(); }catch{} }
+    S.gathered = [];
+    const pc = new RTCPeerConnection({iceServers: iceServers()});
+    S.pc = pc;
+    if(S.mic){ for(const t of S.mic.getTracks()) pc.addTrack(t, S.mic); }
+    pc.ontrack = (ev)=>{
+      ui.remoteAudio.srcObject = ev.streams[0];
+      setupRemoteLevelMeter(ev.streams[0]);
+    };
+    pc.onicecandidate = (ev)=>{ if(ev.candidate) S.gathered.push(ev.candidate.toJSON()); };
+    pc.onconnectionstatechange = ()=>{
+      const st = pc.connectionState;
+      ui.callHint.textContent = 'Звонок: ' + st;
+      if(st==='connected'){ setStatus('ok','На связи'); ui.btnHang.disabled=false; startStats(); }
+      else if(st==='failed'){ setStatus('bad','Не удалось соединиться'); ui.btnHang.disabled=true; stopStats(); }
+      else if(st==='connecting'){ setStatus('warn','Соединяем…'); }
+      else if(st==='disconnected' || st==='closed'){ setStatus('warn','Связь прервана'); ui.btnHang.disabled=true; stopStats(); }
+    };
+    return pc;
+  }
+
+  function pack(obj){
+    const s = JSON.stringify(obj);
+    const b64 = btoa(unescape(encodeURIComponent(s))).replaceAll('+','-').replaceAll('/','_').replace(/=+$/,'');
+    return b64;
+  }
+  function unpack(b64url){
+    const b64 = b64url.replaceAll('-','+').replaceAll('_','/');
+    const pad = b64.length % 4 === 0 ? '' : '='.repeat(4 - (b64.length % 4));
+    const json = decodeURIComponent(escape(atob(b64 + pad)));
+    return JSON.parse(json);
+  }
+
+  function waitIceComplete(pc, timeoutMs=1200){
+    return new Promise((resolve)=>{
+      if(pc.iceGatheringState==='complete') return resolve();
+      const t = setTimeout(resolve, timeoutMs);
+      pc.onicegatheringstatechange = ()=>{
+        if(pc.iceGatheringState==='complete'){ clearTimeout(t); resolve(); }
+      };
+    });
+  }
+
+  async function makeCode(){
+    if(!S.role){ alert('Выберите роль'); return; }
+    await ensureMic();
+    if(S.role==='caller'){
+      const pc = newPC();
+      const offer = await pc.createOffer({offerToReceiveAudio:true});
+      await pc.setLocalDescription(offer);
+      await waitIceComplete(pc);
+      const payload = {v:2, role:'caller', sdp: pc.localDescription.toJSON(), ice: S.gathered, t: Date.now()};
+      ui.myCode.value = pack(payload);
+      ui.btnCopy.disabled = false;
+      ui.btnShare.disabled = !navigator.share;
+      setStatus('warn','Ждём код ответа');
+    }else{
+      if(!ui.peerCode.value.trim()){ alert('Сначала вставьте код собеседника'); return; }
+      const ok = await acceptCode(true); if(!ok) return;
+      const answer = await S.pc.createAnswer();
+      await S.pc.setLocalDescription(answer);
+      await waitIceComplete(S.pc);
+      const payload = {v:2, role:'callee', sdp: S.pc.localDescription.toJSON(), ice: S.gathered, t: Date.now()};
+      ui.myCode.value = pack(payload);
+      ui.btnCopy.disabled = false;
+      ui.btnShare.disabled = !navigator.share;
+      setStatus('warn','Отправьте ваш код инициатору');
+    }
+  }
+  ui.btnMake.onclick = makeCode;
+
+  async function acceptCode(silent=false){
+    const code = ui.peerCode.value.trim();
+    if(!code){ if(!silent) alert('Нет кода'); return false; }
+    let obj;
+    try{ obj = unpack(code); }
+    catch(e){ if(!silent) alert('Формат кода неверный'); return false; }
+    if(!obj || !obj.sdp){ if(!silent) alert('В коде нет SDP'); return false; }
+    await ensureMic();
+    const pc = S.pc ?? newPC();
+    try{ await pc.setRemoteDescription(obj.sdp); }
+    catch(e){ if(!silent) alert('Не удалось применить описание'); return false; }
+    if(Array.isArray(obj.ice)){ for(const c of obj.ice){ try{ await pc.addIceCandidate(c); }catch{} } }
+    if(!silent) setStatus('warn','Код принят. Сформируйте свой код.');
+    return true;
+  }
+  ui.btnAccept.onclick = ()=>acceptCode(false);
+
+  ui.btnCopy.onclick = async ()=>{
+    try{ await navigator.clipboard.writeText(ui.myCode.value); ui.btnCopy.textContent='Скопировано ✓'; setTimeout(()=>ui.btnCopy.textContent='Копировать',1200); }
+    catch(e){ alert('Буфер обмена недоступен'); }
+  };
+  ui.btnShare.onclick = async ()=>{
+    try{
+      await navigator.share({title:'Код PeerCall', text: ui.myCode.value});
+    }catch{}
+  };
+  ui.btnPaste.onclick = async ()=>{
+    try{ const t = await navigator.clipboard.readText(); if(t) ui.peerCode.value = t; }catch{ alert('Буфер обмена недоступен'); }
+  };
+
+  ui.btnHang.onclick = ()=>{
+    try{
+      if(S.pc){ S.pc.getSenders().forEach(s=>{ try{s.track && s.track.stop()}catch{} }); S.pc.close(); }
+      S.pc=null; stopStats();
+      setStatus('warn','Звонок завершён');
+      ui.btnHang.disabled=true; ui.callHint.textContent='Звонок: нет';
+    }catch{}
+  };
+
+  function setupLocalLevelMeter(stream){
+    S.audioCtx = S.audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const src = S.audioCtx.createMediaStreamSource(stream);
+    const analyser = S.audioCtx.createAnalyser(); analyser.fftSize=256;
+    src.connect(analyser); S.localAnalyser = analyser;
+    loopLevels();
+  }
+  function setupRemoteLevelMeter(stream){
+    S.audioCtx = S.audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const src = S.audioCtx.createMediaStreamSource(stream);
+    const analyser = S.audioCtx.createAnalyser(); analyser.fftSize=256;
+    src.connect(analyser); S.remoteAnalyser = analyser;
+  }
+  function loopLevels(){
+    if(!S.localAnalyser && !S.remoteAnalyser) return;
+    const draw = ()=>{
+      if(S.localAnalyser){
+        const data = new Uint8Array(S.localAnalyser.frequencyBinCount);
+        S.localAnalyser.getByteFrequencyData(data);
+        const v = Math.min(100, Math.round((data.reduce((a,b)=>a+b,0)/data.length)/2));
+        ui.lvLocal.style.width = v + '%';
+      }
+      if(S.remoteAnalyser){
+        const data = new Uint8Array(S.remoteAnalyser.frequencyBinCount);
+        S.remoteAnalyser.getByteFrequencyData(data);
+        const v = Math.min(100, Math.round((data.reduce((a,b)=>a+b,0)/data.length)/2));
+        ui.lvRemote.style.width = v + '%';
+      }
+      requestAnimationFrame(draw);
+    };
+    requestAnimationFrame(draw);
+  }
+
+  function startStats(){
+    stopStats();
+    S.statsTimer = setInterval(async ()=>{
+      if(!S.pc) return;
+      try{
+        const stats = await S.pc.getStats();
+        let rtt='—', br='—', jit='—';
+        stats.forEach(report=>{
+          if(report.type==='remote-inbound-rtp' && report.kind==='audio'){
+            if(report.roundTripTime) rtt = (report.roundTripTime*1000).toFixed(0)+' мс';
+            if(report.jitter) jit = (report.jitter*1000).toFixed(0)+' мс';
+          }
+          if(report.type==='outbound-rtp' && report.kind==='audio'){
+            if(report.bytesSent && report.timestamp){
+              // naive bitrate calc kept internal by browser; we just show available kbps if present
+            }
+          }
+          if(report.type==='candidate-pair' && report.state==='succeeded'){
+            if(report.availableOutgoingBitrate) br = (report.availableOutgoingBitrate/1000).toFixed(0)+' кбит/с';
+          }
+        });
+        ui.statRtt.textContent = 'RTT: ' + rtt;
+        ui.statJit.textContent = 'Джиттер: ' + jit;
+        ui.statBit.textContent = 'Битрейт: ' + br;
+      }catch{}
+    }, 1200);
+  }
+  function stopStats(){ if(S.statsTimer){ clearInterval(S.statsTimer); S.statsTimer=null; } }
+
+  // PWA
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', ()=>{
+      navigator.serviceWorker.register('./sw.js').catch(()=>{});
+    });
+  }
+
+  setStatus('ok','Готово к началу');
+})();
+</script>
+</body>
+</html>
