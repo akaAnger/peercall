@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: PeerCall manual QA checklist
+    url: https://github.com/akaAnger/peercall/blob/main/docs/manual-qa.md
+    about: Use this checklist when testing browser behavior.

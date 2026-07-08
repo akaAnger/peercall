@@ -1,0 +1,30 @@
+name: Accessibility feedback
+description: Report an accessibility issue or improvement.
+title: "[A11y]: "
+labels:
+  - accessibility
+body:
+  - type: textarea
+    id: issue
+    attributes:
+      label: What accessibility issue did you find?
+      description: Include the control, text, or flow that was difficult to use.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Keyboard navigation
+        - Screen reader behavior
+        - Color or contrast
+        - Text size or layout
+        - Plain-language copy
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What would make this better?

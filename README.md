@@ -1,8 +1,13 @@
 # PeerCall
 
+[![Static checks](https://github.com/akaAnger/peercall/actions/workflows/ci.yml/badge.svg)](https://github.com/akaAnger/peercall/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 PeerCall is a lightweight progressive web app for private one-to-one audio calls directly in the browser.
 
 It uses WebRTC and manual one-time connection codes instead of accounts, sign-ups, signaling servers, or vendor lock-in. The goal is to keep the product small enough for regular people to understand while still being useful as a clean reference implementation for serverless WebRTC audio.
+
+**Live demo:** <https://akaanger.github.io/peercall/>
 
 ## Why This Exists
 
@@ -47,6 +52,12 @@ Then open `http://localhost:8080`.
 
 You can also deploy it to any static host that serves HTTPS.
 
+Run the static smoke checks:
+
+```bash
+npm test
+```
+
 ## Privacy And Security Notes
 
 - PeerCall does not run a signaling backend. Connection codes are exchanged by users outside the app.
@@ -64,13 +75,7 @@ You can also deploy it to any static host that serves HTTPS.
 
 ## Roadmap
 
-- Add a small automated smoke test for the static app shell.
-- Document mobile browser compatibility findings.
-- Add optional TURN configuration for users who need higher connection reliability.
-- Improve accessibility testing with screen readers and keyboard-only flows.
-- Split the WebRTC logic into testable modules if the app grows beyond a single-file prototype.
-- Publish a small compatibility matrix for desktop, mobile, and installed PWA behavior.
-- Add issue templates for bug reports, browser compatibility reports, and accessibility feedback.
+See [docs/roadmap.md](docs/roadmap.md).
 
 ## License
 

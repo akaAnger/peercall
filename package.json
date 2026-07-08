@@ -1,0 +1,17 @@
+{
+  "name": "peercall",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Private peer-to-peer browser audio calls with WebRTC.",
+  "scripts": {
+    "test": "node tests/static-smoke.mjs"
+  },
+  "keywords": [
+    "webrtc",
+    "pwa",
+    "privacy",
+    "audio-call",
+    "peer-to-peer"
+  ],
+  "license": "MIT"
+}

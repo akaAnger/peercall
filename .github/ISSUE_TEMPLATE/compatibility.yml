@@ -1,0 +1,38 @@
+name: Browser compatibility report
+description: Share whether PeerCall works on a browser, device, or network.
+title: "[Compat]: "
+labels:
+  - compatibility
+body:
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      placeholder: Safari 17, Chrome 126, Firefox 128
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and OS
+      placeholder: iPhone iOS 17, Android 14, macOS, Windows
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: Result
+      options:
+        - Call connected
+        - Microphone failed
+        - Code exchange failed
+        - Connection failed
+        - Layout issue
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Include network type, installed PWA mode, or console errors if known.
