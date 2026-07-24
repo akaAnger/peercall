@@ -4,6 +4,10 @@ title: "[Bug]: "
 labels:
   - bug
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve PeerCall. Do not paste connection codes, SDP data, IP addresses, or other private call details into this public issue.
   - type: textarea
     id: summary
     attributes:
@@ -12,13 +16,45 @@ body:
     validations:
       required: true
   - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+      description: Describe the result you expected instead.
+    validations:
+      required: true
+  - type: textarea
     id: steps
     attributes:
       label: Steps to reproduce
       placeholder: |
         1. Open PeerCall on...
-        2. Click...
-        3. See...
+        2. Choose I start the call / I answer a call...
+        3. Click...
+        4. See...
+    validations:
+      required: true
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Where did the call fail?
+      options:
+        - Before microphone permission
+        - While creating the starter code
+        - While creating the answer code
+        - While applying the answer code
+        - After the call connected
+        - Not sure / another stage
+    validations:
+      required: true
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: How often does it happen?
+      options:
+        - Every time
+        - Often
+        - Sometimes
+        - Once
     validations:
       required: true
   - type: input
@@ -33,8 +69,28 @@ body:
     attributes:
       label: Device and OS
       placeholder: iPhone iOS 17, Android 14, Windows 11
+    validations:
+      required: true
+  - type: input
+    id: peer_environment
+    attributes:
+      label: Other device, browser, and OS
+      description: Add the environment used by the other participant, if known.
+      placeholder: Android 14 with Chrome 126
+  - type: dropdown
+    id: network
+    attributes:
+      label: Network setup
+      description: Choose the closest match. Do not include public IP addresses.
+      options:
+        - Both devices on the same Wi-Fi
+        - Devices on different Wi-Fi networks
+        - Wi-Fi and mobile data
+        - Both devices on mobile data
+        - VPN or corporate network involved
+        - Not sure / another setup
   - type: textarea
     id: notes
     attributes:
       label: Extra notes
-      description: Include console errors or screenshots if useful.
+      description: Include sanitized console errors or screenshots if useful. Remove connection codes, SDP data, IP addresses, and personal information first.
