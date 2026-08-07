@@ -63,7 +63,7 @@ npm test
 - PeerCall does not run a signaling backend. Connection codes are exchanged by users outside the app.
 - Calls are carried by WebRTC peer connections and are encrypted by the browser.
 - Connection codes contain WebRTC setup data such as SDP and ICE candidates. Share them privately and create fresh codes for each call attempt.
-- Public STUN servers help browsers discover network paths. For strict NATs or corporate networks, a TURN relay may be required.
+- Public STUN servers help browsers discover network paths. For strict NATs or corporate networks, a TURN relay may be required. See [optional TURN relay setup](docs/turn-relay.md) for the deployment and privacy tradeoffs.
 - Microphone access requires HTTPS or localhost in modern browsers.
 
 ## Current Limitations
