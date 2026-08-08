@@ -13,6 +13,26 @@ function assert(condition, message) {
   }
 }
 
+function extractFunction(source, name) {
+  const marker = `function ${name}(`;
+  const start = source.indexOf(marker);
+  assert(start >= 0, `Expected function ${name}`);
+
+  const bodyStart = source.indexOf("{", start);
+  assert(bodyStart >= 0, `Expected function body for ${name}`);
+
+  let depth = 0;
+  for (let index = bodyStart; index < source.length; index += 1) {
+    if (source[index] === "{") depth += 1;
+    if (source[index] === "}") depth -= 1;
+    if (depth === 0) {
+      return source.slice(start, index + 1);
+    }
+  }
+
+  throw new Error(`Unclosed function body for ${name}`);
+}
+
 const html = await readFile(rootFiles.html, "utf8");
 const manifest = JSON.parse(await readFile(rootFiles.manifest, "utf8"));
 const serviceWorker = await readFile(rootFiles.serviceWorker, "utf8");
@@ -46,6 +66,54 @@ for (const id of requiredIds) {
 const inlineScript = html.match(/<script>\s*([\s\S]*?)\s*<\/script>/u);
 assert(inlineScript, "Expected one inline script");
 new Script(inlineScript[1], { filename: "index-inline.js" });
+
+const appSource = inlineScript[1];
+const codeHelpers = new Function(
+  `${extractFunction(appSource, "pack")}\n${extractFunction(appSource, "unpack")}\nreturn { pack, unpack };`
+)();
+
+const samplePayload = {
+  app: "PeerCall",
+  v: 3,
+  role: "caller",
+  sdp: { type: "offer", sdp: "v=0\r\na=mid:audio ✓" },
+  ice: [{ candidate: "candidate:1 1 UDP 1 192.0.2.1 5000 typ host" }]
+};
+const packedPayload = codeHelpers.pack(samplePayload);
+assert(!/[+/=]/u.test(packedPayload), "Expected URL-safe unpadded connection code");
+assert(JSON.stringify(codeHelpers.unpack(packedPayload)) === JSON.stringify(samplePayload), "Expected connection code round-trip");
+assert(
+  JSON.stringify(codeHelpers.unpack(`  ${packedPayload.slice(0, 8)}\n${packedPayload.slice(8)}  `)) === JSON.stringify(samplePayload),
+  "Expected whitespace-tolerant connection code decoding"
+);
+
+let invalidCodeRejected = false;
+try {
+  codeHelpers.unpack("this-is-not-a-valid-peer-call-code");
+} catch {
+  invalidCodeRejected = true;
+}
+assert(invalidCodeRejected, "Expected invalid connection code to be rejected");
+
+const roleState = { role: "caller" };
+let lastStatus = null;
+const roleHelpers = new Function(
+  "S",
+  "setStatus",
+  `${extractFunction(appSource, "expectedRemoteRole")}\n${extractFunction(appSource, "validateRemoteRole")}\nreturn { validateRemoteRole };`
+)(roleState, (...args) => {
+  lastStatus = args;
+});
+
+assert(roleHelpers.validateRemoteRole({ role: "callee" }), "Expected caller to accept an answer code");
+lastStatus = null;
+assert(!roleHelpers.validateRemoteRole({ role: "caller" }), "Expected caller to reject another offer code");
+assert(lastStatus?.[0] === "bad" && lastStatus?.[1] === "This is the wrong code for your side.", "Expected role mismatch status");
+
+roleState.role = "callee";
+lastStatus = null;
+assert(roleHelpers.validateRemoteRole({ role: "caller" }), "Expected callee to accept an offer code");
+assert(!roleHelpers.validateRemoteRole({ role: "callee" }), "Expected callee to reject an answer-before-offer mismatch");
 
 assert(manifest.name === "PeerCall - private browser audio calls", "Expected English manifest name");
 assert(manifest.short_name === "PeerCall", "Expected compact manifest short name");
