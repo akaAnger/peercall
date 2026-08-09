@@ -30,6 +30,23 @@ Use this checklist before releases and after changes to the WebRTC flow.
 - As callee, paste a caller offer code and confirm the app asks you to create an answer code.
 - As caller, paste a callee answer code and confirm the app moves into connecting state.
 
+## Keyboard and Screen Reader Accessibility
+
+- Starting at the browser chrome, press `Tab` through the entire app and confirm every interactive control is reachable in a logical order without a mouse.
+- Confirm each focused button, checkbox, textarea, and expandable summary has a clearly visible focus indicator.
+- Activate both role buttons with the keyboard and confirm their pressed state is exposed through `aria-pressed` as the role changes.
+- Confirm **My code** and **Their code** are announced with their visible labels, and that the read-only state of **My code** is exposed correctly.
+- Trigger at least three status changes (for example role selection, microphone permission, and invalid connection code) and confirm the `aria-live="polite"` status region announces the updated state without moving focus.
+- Confirm the decorative status dot is ignored by assistive technology and does not add a meaningless announcement.
+- Confirm the **Call setup**, **Connection codes**, **Audio levels**, and **Connection statistics** regions have useful accessible names when navigating by landmarks or regions.
+- Toggle **Simple mode** with a screen reader active and confirm removing technical details does not remove instructions required to complete the call flow.
+- Expand and collapse **How the code exchange works** from the keyboard and confirm its state is announced.
+- Run one complete caller/callee code-exchange flow using keyboard only; confirm focus never becomes trapped and no required action depends on hover or pointer input.
+
+### Suggested test passes
+
+Run the accessibility checklist in at least one Chromium browser and one browser using a different engine. For screen-reader coverage, use a combination available on the test platform such as NVDA + Firefox/Chrome on Windows, VoiceOver + Safari on macOS/iOS, or TalkBack + Chrome on Android. Record the browser, assistive technology, and any failed step when filing an issue.
+
 ## Responsive Layout
 
 - Test at approximately 390 px wide and 844 px tall.
