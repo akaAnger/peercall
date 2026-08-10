@@ -49,7 +49,12 @@ self.addEventListener("fetch", (event) => {
           }
           return response;
         })
-        .catch(() => caches.match("./index.html"));
+        .catch((error) => {
+          if (event.request.mode === "navigate") {
+            return caches.match("./index.html");
+          }
+          throw error;
+        });
     })
   );
 });
