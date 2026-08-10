@@ -134,6 +134,14 @@ new Script(serviceWorker, { filename: "sw.js" });
 assert(serviceWorker.includes("peercall-v3"), "Expected current cache version");
 assert(serviceWorker.includes("skipWaiting"), "Expected service worker update flow");
 assert(serviceWorker.includes("clients.claim"), "Expected service worker activation claim");
+assert(
+  serviceWorker.includes('event.request.mode === "navigate"'),
+  "Expected offline document fallback to be limited to navigation requests"
+);
+assert(
+  !/\.catch\(\(\)\s*=>\s*caches\.match\(["']\.\/index\.html["']\)\)/u.test(serviceWorker),
+  "Expected non-navigation fetch failures not to be replaced with index.html"
+);
 
 const assetListMatch = serviceWorker.match(/const APP_ASSETS = \[([\s\S]*?)\];/u);
 assert(assetListMatch, "Expected a static service worker asset list");
