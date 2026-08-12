@@ -71,7 +71,7 @@ npm test
 - Audio only; no video or group calls.
 - Manual code exchange is intentionally simple but not as convenient as server-assisted signaling.
 - There is no bundled TURN server, so some restrictive networks may fail to connect.
-- Browser behavior differs across mobile platforms, especially around backgrounding, audio autoplay, and installed PWA behavior.
+- Browser behavior differs across mobile platforms, especially around backgrounding, audio autoplay, and installed PWA behavior. See the [browser compatibility matrix](docs/browser-compatibility.md) for the repeatable verification procedure and recorded results.
 
 ## Roadmap
 
