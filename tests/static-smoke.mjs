@@ -149,6 +149,11 @@ const precacheAssets = [...assetListMatch[1].matchAll(/["'](.+?)["']/gu)].map((m
 assert(precacheAssets.length > 0, "Expected at least one precached asset");
 assert(new Set(precacheAssets).size === precacheAssets.length, "Expected unique precache asset paths");
 
+const requiredPrecacheAssets = ["./", "./index.html", "./manifest.json"];
+for (const asset of requiredPrecacheAssets) {
+  assert(precacheAssets.includes(asset), `Expected core PWA asset to be precached: ${asset}`);
+}
+
 for (const asset of precacheAssets) {
   assert(asset.startsWith("./"), `Expected relative precache asset path: ${asset}`);
   const localPath = asset === "./" ? "." : asset.slice(2);
