@@ -124,11 +124,19 @@ assert(/^#[0-9a-f]{6}$/iu.test(manifest.background_color), "Expected valid manif
 assert(/^#[0-9a-f]{6}$/iu.test(manifest.theme_color), "Expected valid manifest theme color");
 assert(Array.isArray(manifest.icons) && manifest.icons.length >= 2, "Expected PWA icons");
 
+const manifestIconSizes = new Set();
 for (const icon of manifest.icons) {
   assert(typeof icon.src === "string" && icon.src.length > 0, "Expected every manifest icon to have a source");
+  assert(/^\d+x\d+$/u.test(icon.sizes), `Expected explicit icon dimensions: ${icon.src}`);
+  assert(icon.type === "image/png", `Expected PNG manifest icon type: ${icon.src}`);
+  assert(icon.purpose?.split(/\s+/u).includes("any"), `Expected general-purpose manifest icon: ${icon.src}`);
+  assert(icon.purpose?.split(/\s+/u).includes("maskable"), `Expected maskable manifest icon: ${icon.src}`);
+  manifestIconSizes.add(icon.sizes);
   await access(icon.src);
   assert(serviceWorker.includes(`./${icon.src}`), `Expected service worker to cache manifest icon: ${icon.src}`);
 }
+assert(manifestIconSizes.has("192x192"), "Expected a 192x192 manifest icon");
+assert(manifestIconSizes.has("512x512"), "Expected a 512x512 manifest icon");
 
 new Script(serviceWorker, { filename: "sw.js" });
 assert(serviceWorker.includes("peercall-v3"), "Expected current cache version");
