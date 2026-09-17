@@ -142,6 +142,8 @@ new Script(serviceWorker, { filename: "sw.js" });
 assert(serviceWorker.includes("peercall-v3"), "Expected current cache version");
 assert(serviceWorker.includes("skipWaiting"), "Expected service worker update flow");
 assert(serviceWorker.includes("clients.claim"), "Expected service worker activation claim");
+assert(serviceWorker.includes("caches.open(CACHE_NAME)"), "Expected fetches to use the PeerCall cache explicitly");
+assert(!serviceWorker.includes("caches.match("), "Expected fetches not to search unrelated origin caches");
 assert(
   serviceWorker.includes('event.request.mode === "navigate"'),
   "Expected offline document fallback to be limited to navigation requests"
