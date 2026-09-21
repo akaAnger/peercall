@@ -45,7 +45,7 @@ self.addEventListener("fetch", (event) => {
         return fetch(event.request)
           .then((response) => {
             if (response && response.ok) {
-              cache.put(event.request, response.clone());
+              return cache.put(event.request, response.clone()).then(() => response);
             }
             return response;
           })
