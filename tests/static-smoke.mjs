@@ -145,6 +145,10 @@ assert(serviceWorker.includes("clients.claim"), "Expected service worker activat
 assert(serviceWorker.includes("caches.open(CACHE_NAME)"), "Expected fetches to use the PeerCall cache explicitly");
 assert(!serviceWorker.includes("caches.match("), "Expected fetches not to search unrelated origin caches");
 assert(
+  /return\s+cache\.put\(event\.request,\s*response\.clone\(\)\)\.then\(\(\)\s*=>\s*response\)/u.test(serviceWorker),
+  "Expected runtime cache writes to stay inside the fetch response promise chain"
+);
+assert(
   serviceWorker.includes('event.request.mode === "navigate"'),
   "Expected offline document fallback to be limited to navigation requests"
 );
