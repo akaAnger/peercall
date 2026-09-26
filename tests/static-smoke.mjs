@@ -115,6 +115,48 @@ lastStatus = null;
 assert(roleHelpers.validateRemoteRole({ role: "caller" }), "Expected callee to accept an offer code");
 assert(!roleHelpers.validateRemoteRole({ role: "callee" }), "Expected callee to reject an answer-before-offer mismatch");
 
+const iceHelpers = new Function(
+  `${extractFunction(appSource, "waitIceComplete")}\nreturn { waitIceComplete };`
+)();
+
+function fakeIcePeer(initialState = "gathering") {
+  const listeners = new Set();
+  return {
+    iceGatheringState: initialState,
+    addEventListener(type, listener) {
+      if (type === "icegatheringstatechange") listeners.add(listener);
+    },
+    removeEventListener(type, listener) {
+      if (type === "icegatheringstatechange") listeners.delete(listener);
+    },
+    complete() {
+      this.iceGatheringState = "complete";
+      for (const listener of [...listeners]) listener();
+    },
+    listenerCount() {
+      return listeners.size;
+    }
+  };
+}
+
+const alreadyCompletePeer = fakeIcePeer("complete");
+assert(await iceHelpers.waitIceComplete(alreadyCompletePeer, 5), "Expected already-complete ICE gathering to succeed");
+
+const completingPeer = fakeIcePeer();
+const completingResult = iceHelpers.waitIceComplete(completingPeer, 50);
+setTimeout(() => completingPeer.complete(), 0);
+assert(await completingResult, "Expected ICE completion event to succeed");
+assert(completingPeer.listenerCount() === 0, "Expected ICE completion listener cleanup after success");
+
+const stalledPeer = fakeIcePeer();
+assert(!(await iceHelpers.waitIceComplete(stalledPeer, 1)), "Expected stalled ICE gathering to fail after timeout");
+assert(stalledPeer.listenerCount() === 0, "Expected ICE completion listener cleanup after timeout");
+
+assert(
+  (appSource.match(/if \(!\(await waitIceComplete\(/gu) ?? []).length === 2,
+  "Expected both offer and answer generation to reject incomplete ICE gathering"
+);
+
 assert(manifest.name === "PeerCall - private browser audio calls", "Expected English manifest name");
 assert(manifest.short_name === "PeerCall", "Expected compact manifest short name");
 assert(manifest.start_url === ".", "Expected relative PWA start URL");
